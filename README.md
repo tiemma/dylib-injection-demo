@@ -37,7 +37,8 @@ zig build
 ```
 
 `slide.sh` walks through: build -> clean run -> show the dylib source ->
-injected run -> why hardened binaries block this. Each step pauses for enter.
+injected run -> disassemble the hijack with `otool` -> why hardened binaries
+block this -> the real-echo injection. Each step pauses for enter.
 
 ## Run it yourself
 

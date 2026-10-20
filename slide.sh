@@ -38,7 +38,15 @@ step "4. Load it via DYLD_INSERT_LIBRARIES" \
      "DYLD_INSERT_LIBRARIES=$LIB ./$BIN"
 DYLD_INSERT_LIBRARIES="$LIB" "./$BIN"
 
-step "5. Why this doesn't work on a hardened binary" \
+step "5. Crack it open: what dyld actually sees" \
+     "the __mod_init_func and __interpose sections, and the disassembly dyld runs" \
+     "otool -l $LIB | grep -A4 '__interpose\|__mod_init_func'"
+otool -l "$LIB" | grep -A4 "__interpose\|__mod_init_func"
+echo
+echo "${DIM}disassembly of the hijacked getuid():${RESET}"
+otool -tV "$LIB" | grep -A8 "inject.fakeGetuid:"
+
+step "6. Why this doesn't work on a hardened binary" \
      "codesign --options runtime + no custom entitlement = DYLD refuses to load the dylib." \
      "(see README.md for the defensive side)"
 
@@ -48,13 +56,13 @@ if [ ! -x "$GECHO" ]; then
     exit 1
 fi
 
-step "6. Why not /bin/echo" \
+step "7. Why not /bin/echo" \
      "/bin/echo is a SIP-protected platform binary - DYLD_INSERT_LIBRARIES is silently" \
      "ignored against it, no error, dylib never loads. Using GNU coreutils' echo instead:" \
      "a real, unmodified, adhoc-signed echo binary SIP doesn't protect. $GECHO hello world"
 "$GECHO" hello world
 
-step "7. Now inject it" \
+step "8. Now inject it" \
      "DYLD_INSERT_LIBRARIES=libhack_echo.dylib $GECHO hello world" \
      "every call to fputs in the process gets redirected"
 DYLD_INSERT_LIBRARIES="$(pwd)/zig-out/lib/libhack_echo.dylib" "$GECHO" hello world
