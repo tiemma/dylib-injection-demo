@@ -27,17 +27,6 @@ pub fn build(b: *std.Build) void {
     inject.root_module.link_libc = true;
     b.installArtifact(inject);
 
-    const echo = b.addExecutable(.{
-        .name = "echo",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/echo.zig"),
-            .target = target,
-            .optimize = optimize,
-        }),
-    });
-    echo.root_module.link_libc = true;
-    b.installArtifact(echo);
-
     const hack_echo = b.addLibrary(.{
         .name = "hack_echo",
         .linkage = .dynamic,

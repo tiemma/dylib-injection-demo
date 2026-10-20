@@ -11,12 +11,23 @@ A malicious dylib gets loaded into it via `DYLD_INSERT_LIBRARIES` and:
 
 Run clean, the vault is locked. Run injected, it's root and unlocked.
 
-A second pair, `echo` / `libhack_echo.dylib`, shows the other half of why this
-technique matters: it's not just bypassing a check, it's hijacking a
-program's output wholesale. `echo hello world` normally prints `hello world`;
-injected, it prints `hacked` no matter what you pass it. Real `/bin/echo` is
-a SIP-protected system binary and can't be targeted this way, so this repo
-ships a tiny Zig clone of it as the victim.
+A second piece, `libhack_echo.dylib`, shows the other half of why this
+technique matters: it's not just bypassing a check, it's hijacking a real
+program's output wholesale. Injected into an echo binary, `echo hello world`
+prints `hacked` no matter what you pass it.
+
+Apple's own `/bin/echo` can't be the target: it's a SIP-protected platform
+binary, so `DYLD_INSERT_LIBRARIES` is silently ignored against it (verified
+below, no error, dylib never loads). GNU coreutils' `echo` (`gecho`, via
+`brew install coreutils`) is a real, unmodified, adhoc-signed echo binary
+with no such protection - that's the target:
+
+```sh
+brew install coreutils
+GECHO="$(brew --prefix coreutils)/bin/gecho"
+"$GECHO" hello world                                              # hello world
+DYLD_INSERT_LIBRARIES=./zig-out/lib/libhack_echo.dylib "$GECHO" hello world  # hacked
+```
 
 ## The play (run it)
 
@@ -34,10 +45,9 @@ injected run -> why hardened binaries block this. Each step pauses for enter.
 zig build
 ./zig-out/bin/victim                                             # denied
 DYLD_INSERT_LIBRARIES=./zig-out/lib/libinject.dylib ./zig-out/bin/victim  # granted
-
-./zig-out/bin/echo hello world                                           # "hello world"
-DYLD_INSERT_LIBRARIES=./zig-out/lib/libhack_echo.dylib ./zig-out/bin/echo hello world  # "hacked"
 ```
+
+See the intro above for the `gecho` injection example.
 
 ## How it works
 
@@ -90,6 +100,7 @@ lipo -create -output victim-universal \
 
 - Zig 0.17+
 - macOS (uses `DYLD_INSERT_LIBRARIES`, Mach-O load commands, `codesign`)
+- `brew install coreutils` (for the echo injection target, `gecho`)
 
 ## Disclosure
 
