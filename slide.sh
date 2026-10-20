@@ -42,5 +42,15 @@ step "5. Why this doesn't work on a hardened binary" \
      "codesign --options runtime + no custom entitlement = DYLD refuses to load the dylib." \
      "(see README.md for the defensive side)"
 
+step "6. The point of all this: hijacking real output" \
+     "echo clean" \
+     "./zig-out/bin/echo hello world"
+./zig-out/bin/echo hello world
+
+step "7. Now inject it" \
+     "DYLD_INSERT_LIBRARIES=libhack_echo.dylib ./zig-out/bin/echo hello world" \
+     "every call to fputs in the process gets redirected"
+DYLD_INSERT_LIBRARIES="$(pwd)/zig-out/lib/libhack_echo.dylib" ./zig-out/bin/echo hello world
+
 echo
 echo "${BOLD}${CYAN}── done ──${RESET}"

@@ -11,6 +11,13 @@ A malicious dylib gets loaded into it via `DYLD_INSERT_LIBRARIES` and:
 
 Run clean, the vault is locked. Run injected, it's root and unlocked.
 
+A second pair, `echo` / `libhack_echo.dylib`, shows the other half of why this
+technique matters: it's not just bypassing a check, it's hijacking a
+program's output wholesale. `echo hello world` normally prints `hello world`;
+injected, it prints `hacked` no matter what you pass it. Real `/bin/echo` is
+a SIP-protected system binary and can't be targeted this way, so this repo
+ships a tiny Zig clone of it as the victim.
+
 ## The play (run it)
 
 ```sh
@@ -27,6 +34,9 @@ injected run -> why hardened binaries block this. Each step pauses for enter.
 zig build
 ./zig-out/bin/victim                                             # denied
 DYLD_INSERT_LIBRARIES=./zig-out/lib/libinject.dylib ./zig-out/bin/victim  # granted
+
+./zig-out/bin/echo hello world                                           # "hello world"
+DYLD_INSERT_LIBRARIES=./zig-out/lib/libhack_echo.dylib ./zig-out/bin/echo hello world  # "hacked"
 ```
 
 ## How it works
